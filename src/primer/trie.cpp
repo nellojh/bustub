@@ -5,26 +5,7 @@
 namespace bustub {
 
 template<class T>
-T _get(std::shared_ptr<bustub::TrieNode>root,std::string_view key){
-
-}
-
-
-
-template <class T>
-auto Trie::Get(std::string_view key) const -> const T * {//递归
-  throw NotImplementedException("Trie::Get is not implemented.");
-  if (key.empty()) {
-    const bustub::TrieNodeWithValue<T> *tnwv = dynamic_cast<const bustub::TrieNodeWithValue<T> *>(root_.get());
-    return tnwv == nullptr ? nullptr : tnwv->value_.get();
-  }
-
-  auto node=root_;
-  if(node== nullptr){
-    return nullptr;
-  }
-
-  return _get<T>(node,key);
+const T* _get(std::shared_ptr<bustub::TrieNode>node,std::string_view key){
   if(node->children_.find(key[0])!=node->children_.end()){//当前找到了目标字符
     //会有两种情况
     //1.当前字符是最后一个字符，直接返回
@@ -33,10 +14,33 @@ auto Trie::Get(std::string_view key) const -> const T * {//递归
       const auto result=dynamic_cast<const TrieNodeWithValue<T> *>(node.get());
       return result->value_.get();
     }else{//接着找
+      auto it=node->children_.find(key[0]);
+      std::shared_ptr new_kid=it->second->Clone();
       std::string_view sub_key(key.data() + 1, key.size() - 1);
-      return Get<T>(sub_key);
+      return _get<T>(new_kid,sub_key);
     }
+  }else{
+    return nullptr;
   }
+}
+
+
+
+template <class T>
+auto Trie::Get(std::string_view key) const -> const T * {//递归
+//  throw NotImplementedException("Trie::Get is not implemented.");
+  if (key.empty()) {
+    const bustub::TrieNodeWithValue<T> *tnwv = dynamic_cast<const bustub::TrieNodeWithValue<T> *>(root_.get());
+    return tnwv == nullptr ? nullptr : tnwv->value_.get();
+  }
+
+
+  if(root_== nullptr){
+    return nullptr;
+  }
+  std::shared_ptr<TrieNode> node=root_->Clone();
+
+  return _get<T>(node,key);
 
   // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
   // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
@@ -78,7 +82,7 @@ void put_(std::shared_ptr<bustub::TrieNode> root,std::string_view key, T val){
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  throw NotImplementedException("Trie::Put is not implemented.");
+//  throw NotImplementedException("Trie::Put is not implemented.");
 
   if(key.size()==0){//说明当前的root就是要插入数值的点
     std::shared_ptr<T> val=std::make_shared<T>(std::move(value));
@@ -160,14 +164,32 @@ bool _remove(std::shared_ptr<TrieNode> root,std::string_view key){
   }else{//不是最后一次操作
     std::string_view sub_key(key.data() + 1, key.size() - 1);
     if(root->children_.find(key.at(0))!=root->children_.end()){//说明存在这个点
-      if(root->children_.size()>1){
+      if(root->children_.size()>1){//子节点>1哪怕删除了也不会影响这个节点
         auto it=root->children_.find(key.at(0));
-
-
         //写时复制，必须操作Clone对象，且这里不能定义为auto
         std::shared_ptr<bustub::TrieNode> kid=it->second->Clone();
-        auto res=_remove(kid,sub_key);
+        auto res=_remove(kid,sub_key);//子节点是否删除
+        return false;
+      }else if(root->children_.size()==1){//子节点个数为1
+        auto it=root->children_.find(key.at(0));
+        //写时复制，必须操作Clone对象，且这里不能定义为auto
+        std::shared_ptr<bustub::TrieNode> kid=it->second->Clone();
+        auto res=_remove(kid,sub_key);//子节点是否删除
+        if(res==true){//唯一的一个子节点出现删除情况了，那么需要判断子节点，需要判断是否需要进行删除操作
+          if(kid->is_value_node_){//当前子节点是一个有值节点，不能删除
+            return false;
+          }else{
+            root->children_.erase(key.at(0));
+            return true;
+          }
+        }else{
+          return false;//说明子节点没有进行删除操作
+        }
+      }else{//子节点已经不存在了但是路线还没走完，说明该key一定不存在
+        return false;
       }
+
+
     }else{//不存在这个节点，说明没东西可以删除的
       return false;
     }
@@ -177,37 +199,39 @@ bool _remove(std::shared_ptr<TrieNode> root,std::string_view key){
 
 
 auto Trie::Remove(std::string_view key) const -> Trie {
-  throw NotImplementedException("Trie::Remove is not implemented.");
+//throw NotImplementedException("Trie::Remove is not implemented.");
   //删除的逻辑就是找点删除，最后再进行一次节点清洗
 
 
-  auto node=root_;
-  if(node== nullptr){//没什么好删除的
+auto node=root_;
+if(node== nullptr){//没什么好删除的
+  return *this;
+}
+//处理key为空的特殊情况
+if(key.empty()){
+  if(node->is_value_node_){//根节点代表空值，说明根节点需要删除
+    if(node->children_.empty()){
+      return Trie();
+    }else{
+      std::shared_ptr<TrieNode> kid=std::make_shared<TrieNode>(node->children_);
+      return Trie(kid);
+    }
+  }else{
     return *this;
   }
-  //处理key为空的特殊情况
-  if(key.empty()){
-    if(node->is_value_node_){//根节点代表空值，说明根节点需要删除
-      if(node->children_.empty()){
-        return Trie();
-      }else{
-        std::shared_ptr<TrieNode> kid=std::make_shared<TrieNode>(node->children_);
-        return Trie(kid);
-      }
-    }else{
-      return *this;
-    }
-  }
+}
 
   std::shared_ptr<TrieNode> new_root=root_->Clone();//复制一个操作
   //开始删除操作
-
-  _remove(new_root,key);
-
-
-
-
-
+  bool res=_remove(new_root,key);
+  if(res==true){
+    if (new_root->children_.empty() && !new_root->is_value_node_) {
+      new_root = nullptr;
+    }
+    return Trie(std::move(new_root));
+  }else{
+    return *this;
+  }
 
   // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
   // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.

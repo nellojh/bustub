@@ -28,7 +28,7 @@ const T* _get(std::shared_ptr<bustub::TrieNode>node,std::string_view key){
 
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {//递归
-//  throw NotImplementedException("Trie::Get is not implemented.");
+throw NotImplementedException("Trie::Get is not implemented.");
   if (key.empty()) {
     const bustub::TrieNodeWithValue<T> *tnwv = dynamic_cast<const bustub::TrieNodeWithValue<T> *>(root_.get());
     return tnwv == nullptr ? nullptr : tnwv->value_.get();
@@ -82,7 +82,7 @@ void put_(std::shared_ptr<bustub::TrieNode> root,std::string_view key, T val){
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-//  throw NotImplementedException("Trie::Put is not implemented.");
+throw NotImplementedException("Trie::Put is not implemented.");
 
   if(key.size()==0){//说明当前的root就是要插入数值的点
     std::shared_ptr<T> val=std::make_shared<T>(std::move(value));
@@ -199,7 +199,7 @@ bool _remove(std::shared_ptr<TrieNode> root,std::string_view key){
 
 
 auto Trie::Remove(std::string_view key) const -> Trie {
-//throw NotImplementedException("Trie::Remove is not implemented.");
+throw NotImplementedException("Trie::Remove is not implemented.");
   //删除的逻辑就是找点删除，最后再进行一次节点清洗
 
 

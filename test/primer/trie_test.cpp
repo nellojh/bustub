@@ -22,13 +22,14 @@ TEST(TrieTest, BasicPutTest) {
   trie = trie.Put<std::string>("", "empty-key");
 }
 
+
+
 TEST(TrieTest, TrieStructureCheck) {
   auto trie = Trie();
   // Put something
   trie = trie.Put<uint32_t>("test", 233);
+
   ASSERT_EQ(*trie.Get<uint32_t>("test"), 233);
-  // Ensure the trie is the same representation of the writeup
-  // (Some students were using '\0' as the terminator in previous semesters)
   auto root = trie.GetRoot();
   ASSERT_EQ(root->children_.size(), 1);
   ASSERT_EQ(root->children_.at('t')->children_.size(), 1);
@@ -124,8 +125,8 @@ TEST(TrieTest, RemoveFreeTest) {
 TEST(TrieTest, MismatchTypeTest) {
   auto trie = Trie();
   // Put something
-  trie = trie.Put<uint32_t>("test", 2333);
-  ASSERT_EQ(trie.Get<std::string>("test"), nullptr);
+  trie = trie.Put<uint32_t>("t", 2333);
+  ASSERT_EQ(trie.Get<std::string>("t"), nullptr);
 }
 
 TEST(TrieTest, CopyOnWriteTest1) {

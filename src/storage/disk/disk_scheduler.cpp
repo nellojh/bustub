@@ -33,9 +33,34 @@ DiskScheduler::~DiskScheduler() {
     background_thread_->join();
   }
 }
+/**
+ * TODO(P1): Add implementation
+ *
+ * @brief Schedules a request for the DiskManager to execute.
+ *
+ * @param r The request to be scheduled.
+ */
+void DiskScheduler::Schedule(DiskRequest r) { request_queue_.Put(std::make_optional<DiskRequest>(std::move(r))); }
+/**
+ * TODO(P1): Add implementation
+ *
+ * @brief Background worker thread function that processes scheduled requests.
+ *
+ * The background thread needs to process requests while the DiskScheduler exists, i.e., this function should not
+ * return until ~DiskScheduler() is called. At that point you need to make sure that the function does return.
+ */
 
-void DiskScheduler::Schedule(DiskRequest r) {}
-
-void DiskScheduler::StartWorkerThread() {}
+void DiskScheduler::StartWorkerThread() {
+  std::optional<DiskRequest> request;
+  while ((request = request_queue_.Get(), request.has_value())) {
+    if (request->is_write_) {
+      disk_manager_->WritePage(request->page_id_, request->data_);
+    } else {
+      disk_manager_->ReadPage(request->page_id_, request->data_);
+    }
+    // 请求已处理完成，值设为true
+    request->callback_.set_value(true);
+  }
+}
 
 }  // namespace bustub

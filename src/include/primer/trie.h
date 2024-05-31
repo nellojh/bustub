@@ -41,7 +41,7 @@ class MoveBlocked {
 };
 
 // A TrieNode is a node in a Trie.
-//Node 的一个原型定义，这里是没有数值的
+// Node 的一个原型定义，这里是没有数值的
 class TrieNode {
  public:
   // Create a TrieNode with no children.
@@ -74,7 +74,7 @@ class TrieNode {
 };
 
 // A TrieNodeWithValue is a TrieNode that also has a value of type T associated with it.
-//有数值的Node的定义
+// 有数值的Node的定义
 template <class T>
 class TrieNodeWithValue : public TrieNode {
  public:
@@ -91,13 +91,13 @@ class TrieNodeWithValue : public TrieNode {
   //
   // Note: if you want to convert `unique_ptr` into `shared_ptr`, you can use `std::shared_ptr<T>(std::move(ptr))`.
 
-  //对基类Clone的重写，这里是有数值的Node，所以需要对数值进行拷贝
+  // 对基类Clone的重写，这里是有数值的Node，所以需要对数值进行拷贝
   auto Clone() const -> std::unique_ptr<TrieNode> override {
     return std::make_unique<TrieNodeWithValue<T>>(children_, value_);
   }
 
   // The value associated with this trie node.
-  //数值
+  // 数值
   std::shared_ptr<T> value_;
 };
 
@@ -107,7 +107,7 @@ class TrieNodeWithValue : public TrieNode {
 //
 // You are NOT allowed to remove any `const` in this project, or use `mutable` to bypass the const checks.
 
-//Trie的具体定义
+// Trie的具体定义
 class Trie {
  private:
   // The root of the trie.

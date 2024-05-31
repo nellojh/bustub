@@ -49,6 +49,7 @@ class LRUKNode {
  */
 class LRUKReplacer {
  public:
+  using frame_id_t = int;
   /**
    *
    * TODO(P1): Add implementation
@@ -98,7 +99,7 @@ class LRUKReplacer {
    * @param access_type type of access that was received. This parameter is only needed for
    * leaderboard tests.
    */
-  void RecordAccess(frame_id_t frame_id, AccessType access_type = AccessType::Unknown);
+  void RecordAccess(frame_id_t frame_id);
 
   /**
    * TODO(P1): Add implementation
@@ -122,7 +123,7 @@ class LRUKReplacer {
   /**
    * TODO(P1): Add implementation
    *
-   * @brief Remove an evictable frame from replacer, along with its access history.
+   * @brief Remove an evictable frame from c, along with its access history.
    * This function should also decrement replacer's size if removal is successful.
    *
    * Note that this is different from evicting a frame, which always remove the frame
@@ -144,18 +145,33 @@ class LRUKReplacer {
    * @brief Return replacer's size, which tracks the number of evictable frames.
    *
    * @return size_t
+   *
    */
   auto Size() -> size_t;
-
+  //
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
-  [[maybe_unused]] std::unordered_map<frame_id_t, LRUKNode> node_store_;
-  [[maybe_unused]] size_t current_timestamp_{0};
-  [[maybe_unused]] size_t curr_size_{0};
-  [[maybe_unused]] size_t replacer_size_;
-  [[maybe_unused]] size_t k_;
-  [[maybe_unused]] std::mutex latch_;
+ private:
+  size_t current_timestamp_{0};
+  size_t curr_size_{0};
+  size_t max_size_;
+  size_t replacer_size_;
+  size_t k_;
+  std::mutex latch_;
+
+  using timestamp = std::list<size_t>;  //记录单个页时间戳的列表
+  using k_time = std::pair<frame_id_t, size_t>;
+  std::unordered_map<frame_id_t, timestamp> hist;        //用于记录所有页的时间戳
+  std::unordered_map<frame_id_t, size_t> recorded_cnt_;  //用于记录,访问了多少次
+  std::unordered_map<frame_id_t, bool> evictable_;       //用于记录是否可以被驱逐
+
+  std::list<frame_id_t> new_frame_;  //用于记录不满k次的页
+  std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> new_locate_;
+
+  std::list<k_time> cache_frame_;  //用于记录到达k次的页
+  std::unordered_map<frame_id_t, std::list<k_time>::iterator> cache_locate_;
+  static auto CmpTimestamp(const k_time &f1, const k_time &f2) -> bool;
 };
 
 }  // namespace bustub

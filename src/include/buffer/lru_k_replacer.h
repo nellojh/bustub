@@ -16,8 +16,8 @@
 #include <list>
 #include <mutex>  // NOLINT
 #include <unordered_map>
+#include <utility>
 #include <vector>
-
 #include "common/config.h"
 #include "common/macros.h"
 
@@ -160,16 +160,16 @@ class LRUKReplacer {
   size_t k_;
   std::mutex latch_;
 
-  using timestamp = std::list<size_t>;  //记录单个页时间戳的列表
+  using timestamp = std::list<size_t>;
   using k_time = std::pair<frame_id_t, size_t>;
-  std::unordered_map<frame_id_t, timestamp> hist;        //用于记录所有页的时间戳
-  std::unordered_map<frame_id_t, size_t> recorded_cnt_;  //用于记录,访问了多少次
-  std::unordered_map<frame_id_t, bool> evictable_;       //用于记录是否可以被驱逐
+  std::unordered_map<frame_id_t, timestamp> hist_;
+  std::unordered_map<frame_id_t, size_t> recorded_cnt_;
+  std::unordered_map<frame_id_t, bool> evictable_;
 
-  std::list<frame_id_t> new_frame_;  //用于记录不满k次的页
+  std::list<frame_id_t> new_frame_;
   std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> new_locate_;
 
-  std::list<k_time> cache_frame_;  //用于记录到达k次的页
+  std::list<k_time> cache_frame_;
   std::unordered_map<frame_id_t, std::list<k_time>::iterator> cache_locate_;
   static auto CmpTimestamp(const k_time &f1, const k_time &f2) -> bool;
 };

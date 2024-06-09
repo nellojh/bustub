@@ -12,7 +12,8 @@
 
 #include "buffer/lru_k_replacer.h"
 #include <algorithm>
-#include <mutex>
+#include <mutex>  // NOLINT
+
 #include "common/exception.h"
 
 namespace bustub {
@@ -45,32 +46,34 @@ LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_fra
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
   std::lock_guard<std::mutex> lock(latch_);
-  // no item need to evict
+  // 如果没有可以驱逐元素
   if (curr_size_ == 0) {
     return false;
   }
-
+  // 看访问历史列表里，有无帧可以删除
   for (auto it = new_frame_.rbegin(); it != new_frame_.rend(); it++) {
     auto frame = *it;
+    // 如果可以被删除
     if (evictable_[frame]) {
       recorded_cnt_[frame] = 0;
       new_locate_.erase(frame);
       new_frame_.remove(frame);
       curr_size_--;
-      hist[frame].clear();
+      hist_[frame].clear();
       *frame_id = frame;
       return true;
     }
   }
-  for (auto it = cache_frame_.begin(); it != cache_frame_.end(); it++) {
-    auto frame = (*it).first;
-    if (evictable_[frame]) {
-      recorded_cnt_[frame] = 0;
-      cache_frame_.erase(it);
-      cache_locate_.erase(frame);
+  // 看缓存队列里有无帧可以删除
+  for (auto its = cache_frame_.begin(); its != cache_frame_.end(); its++) {
+    auto frames = (*its).first;
+    if (evictable_[frames]) {
+      recorded_cnt_[frames] = 0;
+      cache_frame_.erase(its);
+      cache_locate_.erase(frames);
       curr_size_--;
-      hist[frame].clear();
-      *frame_id = frame;
+      hist_[frames].clear();
+      *frame_id = frames;
       return true;
     }
   }
@@ -88,6 +91,7 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
  *
  */
 void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
+  std::lock_guard<std::mutex> lock(latch_);
   // 1.
   // out of bound
   if (frame_id > static_cast<frame_id_t>(replacer_size_)) {
@@ -99,7 +103,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
   // 3
   recorded_cnt_[frame_id]++;
   auto cnt = recorded_cnt_[frame_id];
-  hist[frame_id].push_back(current_timestamp_);
+  hist_[frame_id].push_back(current_timestamp_);
 
   // it is the first record we push in.
   if (cnt == 1) {
@@ -120,7 +124,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
     new_frame_.erase(new_locate_[frame_id]);
     new_locate_.erase(frame_id);
     // Kth time
-    auto kth_time = hist[frame_id].front();
+    auto kth_time = hist_[frame_id].front();
     // make a new pair to record the id-time
     k_time new_cache(frame_id, kth_time);
     // find the place that the new pair need to insert to
@@ -131,9 +135,9 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id) {
   }
   if (cnt > k_) {
     // hist`s size is always <=k
-    hist[frame_id].erase(hist[frame_id].begin());
+    hist_[frame_id].erase(hist_[frame_id].begin());
     cache_frame_.erase(cache_locate_[frame_id]);
-    auto kth_time = hist[frame_id].front();
+    auto kth_time = hist_[frame_id].front();
     k_time new_cache(frame_id, kth_time);
     auto it = std::upper_bound(cache_frame_.begin(), cache_frame_.end(), new_cache, CmpTimestamp);
     it = cache_frame_.insert(it, new_cache);
@@ -164,7 +168,7 @@ void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
     throw std::exception();
   }
   if (recorded_cnt_[frame_id] == 0) {
-    throw std::exception();
+    return;
   }
   if (evictable_[frame_id] == set_evictable) {
     return;
@@ -212,13 +216,13 @@ void LRUKReplacer::Remove(frame_id_t frame_id) {
     new_frame_.erase(new_locate_[frame_id]);
     new_locate_.erase(frame_id);
     recorded_cnt_[frame_id] = 0;
-    hist[frame_id].clear();
+    hist_[frame_id].clear();
     curr_size_--;
   } else {
     cache_frame_.erase(cache_locate_[frame_id]);
     cache_locate_.erase(frame_id);
     recorded_cnt_[frame_id] = 0;
-    hist[frame_id].clear();
+    hist_[frame_id].clear();
     curr_size_--;
   }
 }

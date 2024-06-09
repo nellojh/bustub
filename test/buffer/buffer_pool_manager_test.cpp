@@ -23,7 +23,7 @@ namespace bustub {
 
 // NOLINTNEXTLINE
 // Check whether pages containing terminal characters can be recovered
-TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
+TEST(BufferPoolManagerTest, BinaryDataTest) {
   const std::string db_name = "test.db";
   const size_t buffer_pool_size = 10;
   const size_t k = 5;
@@ -85,6 +85,9 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
   // Scenario: We should be able to fetch the data we wrote a while ago.
   page0 = bpm->FetchPage(0);
   ASSERT_NE(nullptr, page0);
+  std::cout << page0->GetData() << "\n";
+  std::cout << "hello\n";
+  std::cout << random_binary_data << "\n";
   EXPECT_EQ(0, memcmp(page0->GetData(), random_binary_data, BUSTUB_PAGE_SIZE));
   EXPECT_EQ(true, bpm->UnpinPage(0, true));
 
@@ -97,7 +100,7 @@ TEST(BufferPoolManagerTest, DISABLED_BinaryDataTest) {
 }
 
 // NOLINTNEXTLINE
-TEST(BufferPoolManagerTest, DISABLED_SampleTest) {
+TEST(BufferPoolManagerTest, SampleTest) {
   const std::string db_name = "test.db";
   const size_t buffer_pool_size = 10;
   const size_t k = 5;
@@ -107,18 +110,26 @@ TEST(BufferPoolManagerTest, DISABLED_SampleTest) {
 
   page_id_t page_id_temp;
   auto *page0 = bpm->NewPage(&page_id_temp);
-
+  Page *page1, *page9;
   // Scenario: The buffer pool is empty. We should be able to create a new page.
   ASSERT_NE(nullptr, page0);
   EXPECT_EQ(0, page_id_temp);
 
   // Scenario: Once we have a page, we should be able to read and write content.
   snprintf(page0->GetData(), BUSTUB_PAGE_SIZE, "Hello");
+
   EXPECT_EQ(0, strcmp(page0->GetData(), "Hello"));
 
-  // Scenario: We should be able to create new pages until we fill up the buffer pool.
   for (size_t i = 1; i < buffer_pool_size; ++i) {
-    EXPECT_NE(nullptr, bpm->NewPage(&page_id_temp));
+    if (i == 1) {
+      page1 = bpm->NewPage(&page_id_temp);
+      snprintf(page1->GetData(), BUSTUB_PAGE_SIZE, "World");
+    } else if (i == 9) {
+      page9 = bpm->NewPage(&page_id_temp);
+      snprintf(page9->GetData(), BUSTUB_PAGE_SIZE, "dead");
+    } else {
+      EXPECT_NE(nullptr, bpm->NewPage(&page_id_temp));
+    }
   }
 
   // Scenario: Once the buffer pool is full, we should not be able to create any new pages.
@@ -137,7 +148,10 @@ TEST(BufferPoolManagerTest, DISABLED_SampleTest) {
 
   // Scenario: We should be able to fetch the data we wrote a while ago.
   page0 = bpm->FetchPage(0);
+  page9 = bpm->FetchPage(9);
+  std::cout << "page9->GetData():" << page9->GetData() << "\n";
   ASSERT_NE(nullptr, page0);
+  std::cout << "page0->GetData():" << page0->GetData() << "\n";
   EXPECT_EQ(0, strcmp(page0->GetData(), "Hello"));
 
   // Scenario: If we unpin page 0 and then make a new page, all the buffer pages should
